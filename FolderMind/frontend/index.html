@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FolderMind — AI File Organizer</title>
+    <!-- Tailwind CSS for high fidelity desktop rendering -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            50: '#f6f6f9',
+                            100: '#ececf3',
+                            800: '#1e1e24',
+                            900: '#121214',
+                            950: '#0a0a0c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden select-none">
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="hidden bg-rose-950/80 border-b border-rose-500/30 text-rose-200 px-4 py-2.5 text-sm flex items-center justify-between transition-all duration-300">
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span id="error-text">Ollama not detected — please start Ollama and ensure llama3.2 is pulled.</span>
+        </div>
+        <button onclick="dismissError()" class="text-rose-300 hover:text-white p-1 rounded-md hover:bg-rose-900/50">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Header / Top Navigation -->
+    <header class="h-14 border-b border-slate-800 bg-dark-900 flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+                F
+            </div>
+            <div>
+                <h1 class="text-base font-semibold text-slate-200 leading-tight">FolderMind</h1>
+                <p class="text-[11px] text-slate-400 font-mono tracking-wide" id="watch-folder-indicator">No folder watched</p>
+            </div>
+        </div>
+
+        <!-- Middle Search -->
+        <div class="w-96 max-w-lg relative">
+            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <input 
+                type="text" 
+                id="search-input"
+                placeholder="Search filenames, summaries, categories..." 
+                class="w-full bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 focus:border-indigo-500 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-200 placeholder-slate-400 focus:outline-none transition-all duration-200"
+            />
+        </div>
+
+        <!-- Right Side Button -->
+        <div class="flex items-center gap-3">
+            <button 
+                onclick="setupWatchFolder()" 
+                class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors duration-150 flex items-center gap-2 shadow-lg shadow-indigo-600/10"
+            >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>Watch Folder</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar (Navigation & Categories) -->
+        <aside class="w-64 border-r border-slate-800 bg-dark-900 flex flex-col justify-between shrink-0 overflow-y-auto">
+            <div class="p-4 flex flex-col gap-6">
+                <!-- File Stats Overview -->
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">My Library</h3>
+                    <nav class="space-y-1">
+                        <button onclick="selectCategory('all')" id="cat-all" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm bg-slate-800 text-slate-100 font-medium transition-colors">
+                            <span class="flex items-center gap-2.5">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                </svg>
+                                <span>All Files</span>
+                            </span>
+                            <span class="text-xs bg-slate-700/60 text-slate-300 px-2 py-0.5 rounded-full font-mono" id="count-all">0</span>
+                        </button>
+                        <button onclick="selectCategory('pending')" id="cat-pending" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/50 transition-colors">
+                            <span class="flex items-center gap-2.5">
+                                <svg class="w-4 h-4 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="spinner-pending-icon">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H18"/>
+                                </svg>
+                                <span>Analyzing</span>
+                            </span>
+                            <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full font-mono" id="count-pending">0</span>
+                        </button>
+                        <button onclick="selectCategory('error')" id="cat-error" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800/50 transition-colors">
+                            <span class="flex items-center gap-2.5">
+                                <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Failed</span>
+                            </span>
+                            <span class="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full font-mono" id="count-error">0</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- AI Taxonomy Categories -->
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Virtual Categories</h3>
+                    <div class="space-y-1 overflow-y-auto max-h-[280px] pr-1" id="category-list">
+                        <!-- Dynamic Categories go here -->
+                        <div class="text-xs text-slate-500 px-3 py-2 italic">No categories yet.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Connection Status -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/40 text-xs flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Local AI (Ollama)</span>
+                    <span class="flex items-center gap-1.5 font-medium" id="ollama-badge">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span class="text-slate-400">Checking...</span>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Watcher Monitor</span>
+                    <span class="flex items-center gap-1.5 font-medium" id="watcher-badge">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span class="text-slate-400">Off</span>
+                    </span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Grid Board -->
+        <main class="flex-1 bg-dark-950 flex flex-col overflow-hidden">
+            <!-- Active Filter / Sub-header bar -->
+            <div class="px-6 py-3 border-b border-slate-800 bg-dark-900/20 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-slate-400">Viewing:</span>
+                    <span class="text-sm font-semibold text-slate-200 capitalize" id="current-view-title">All Files</span>
+                </div>
+                <div class="text-xs text-slate-400" id="files-meta-indicator">0 files cataloged</div>
+            </div>
+
+            <!-- Cards Container -->
+            <div class="flex-1 overflow-y-auto p-6" id="cards-container">
+                <!-- Fallback empty state -->
+                <div id="empty-state" class="hidden h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-slate-400 mb-4">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5M5 19a2 2 0 002 2h2M9 5h4m1 5v6m-3-3h6"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-medium text-slate-200 mb-1">Watch a folder to organize</h2>
+                    <p class="text-sm text-slate-400 mb-6">FolderMind will automatically read added PDFs, Word docs, and txt files, run offline summaries, and group them virtually.</p>
+                    <button onclick="setupWatchFolder()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-600/10">
+                        Choose Watch Directory
+                    </button>
+                </div>
+
+                <!-- Grid of File Cards -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4" id="files-grid">
+                    <!-- Dynamic Cards go here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Background Sync Overlay / Notification (mini toast) -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 border border-slate-700 shadow-2xl rounded-xl p-4 max-w-sm flex items-start gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600/15 flex items-center justify-center text-indigo-400 shrink-0">
+            <svg class="w-4 h-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+        </div>
+        <div>
+            <h4 class="text-xs font-semibold text-slate-200" id="toast-title">File detected</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5" id="toast-desc">Analyzing resume.pdf...</p>
+        </div>
+    </div>
+
+    <!-- Frontend Script Connection -->
+    <script src="app.js"></script>
+</body>
+</html>

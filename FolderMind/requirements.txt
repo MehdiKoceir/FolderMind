@@ -1,0 +1,6 @@
+pywebview>=5.1.0
+watchdog>=4.0.0
+python-docx>=1.1.0
+pypdf>=4.2.0
+# Native SQLite3 and urllib are used to prevent external dependency bloat
+# Ensure you have Python 3.11+ installed.

@@ -1,0 +1,6 @@
+{
+  "name": "FolderMind File Organizer",
+  "description": "An interactive simulator and codebase explorer for FolderMind, an offline, AI-powered desktop file organizer utilizing Ollama, watchdog, and SQLite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

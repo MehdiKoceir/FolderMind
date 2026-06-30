@@ -1,0 +1,57 @@
+/* Custom Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom cards layout adjustments */
+.tag-badge {
+    transition: all 0.15s ease-in-out;
+}
+
+.tag-badge:hover {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+/* Selected state indicators */
+.active-sidebar-btn {
+    background-color: #1e1b4b !important;
+    color: #e0e7ff !important;
+    border-left: 3px solid #6366f1;
+}
+
+/* Focus styles */
+button:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
